@@ -14,14 +14,90 @@ enum UserRole {
   COMPLIANCE_OFFICER
 }
 
+enum ConsentStatus {
+  REQUESTED
+  GRANTED
+  LIMITED
+  REVOKED
+  EXPIRED
+  DENIED
+}
+
+enum AuditAction {
+  USER_REGISTERED
+  CONSENT_REQUESTED
+  CONSENT_GRANTED
+  CONSENT_DENIED
+  CONSENT_LIMITED
+  CONSENT_REVOKED
+  CONSENT_EXPIRED
+  ACCESS_REQUESTED
+  ACCESS_GRANTED
+  ACCESS_DENIED
+}
+
 model User {
-  id           Int      @id @default(autoincrement())
-  fullName     String
-  email        String   @unique
-  passwordHash String
-  role         UserRole @default(USER)
-  isActive     Boolean  @default(true)
-  mfaEnabled   Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            Int          @id @default(autoincrement())
+  fullName      String
+  email         String       @unique
+  passwordHash  String
+  role          UserRole     @default(USER)
+  isActive      Boolean      @default(true)
+  mfaEnabled    Boolean      @default(false)
+  consents      Consent[]
+  auditLogs     AuditLog[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model Consent {
+  id                Int             @id @default(autoincrement())
+  userId            Int
+  requesterName     String
+  dataType          String
+  purpose           String
+  status            ConsentStatus   @default(REQUESTED)
+  allowedActions    String?
+  expiresAt         DateTime?
+  revokedAt         DateTime?
+  decisionAt        DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessRequests    DataAccessRequest[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model DataAccessRequest {
+  id              Int       @id @default(autoincrement())
+  consentId       Int
+  requesterName   String
+  requestedAction String
+  requestedPurpose String
+  isAllowed       Boolean
+  reason          String
+  createdAt       DateTime  @default(now())
+
+  consent         Consent   @relation(fields: [consentId], references: [id], onDelete: Cascade)
+
+  @@index([consentId])
+}
+
+model AuditLog {
+  id          Int         @id @default(autoincrement())
+  userId       Int?
+  consentId    Int?
+  action       AuditAction
+  details      String
+  createdAt    DateTime    @default(now())
+
+  user         User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([consentId])
+  @@index([action])
 }
