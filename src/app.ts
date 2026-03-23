@@ -5,7 +5,9 @@ import rateLimit from 'express-rate-limit'
 import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv'
 import pinoHttp from 'pino-http'
+import swaggerUi from 'swagger-ui-express'
 import routes from './routes'
+import { swaggerSpec } from './config/swagger'
 
 dotenv.config()
 
@@ -33,6 +35,7 @@ app.use(
   }),
 )
 
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 app.use('/api', routes)
 
 export default app
